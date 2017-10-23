@@ -11,7 +11,7 @@ void gGraphics::Render() {
 	{
 		Poll(event);
 	}
-	this->window.clear();
+	this->window.clear(sf::Color::Green);
 	WindowRender();
 	this->window.display();
 }

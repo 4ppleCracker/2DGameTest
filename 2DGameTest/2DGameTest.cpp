@@ -13,24 +13,50 @@ gGraphics graphics(window);
 
 RectangleShape Player(Vector2f(40, 40));
 
+
+
+
+
+
+bool hasTexture = true;
+
+Font font;
+Texture bomb;
+Texture apple;
+Texture banana;
+Texture* tex[] = { &apple, &banana };
+Text Score;
+
+int _time = 6;
+
 class Fruit
 {
 public:
 	CircleShape* shape;
 	bool Bad;
-	Fruit(bool Bad=false) {
+	bool Deleted;
+	Texture* text;
+	int time = _time;
+	int timer = rand() % time;
+	Fruit(/*Texture* tex,*/ bool Bad = true) {
+		//this->tex = tex;
+		this->Deleted = false;
 		this->shape = new CircleShape(25, 25);
+		this->shape->setOrigin(12.5f, 12.5f);
+		//this->shape->setTexture(tex);
 		this->Bad = Bad;
 	}
-
+	void DeleteBomb() {
+		timer--;
+		cout << timer << endl;
+		if (this->Bad ? timer < 2 : timer < 1) {
+			this->Deleted = true;
+		}
+	}
 };
 
-
 Vector2<int> WASD(0, 0);
-vector<Fruit*> Fruits(0, new Fruit());
-
-Font font;
-Text Score;
+vector<Fruit*> Fruits(0);
 
 int AmountOfFruitsOnScreen = 3;
 int SpawnSpeed = 300;
@@ -39,26 +65,32 @@ bool focus;
 int score;
 int lives = 3;
 
+
 void Async();
 int DistanceFrom(int x, int y) {
 	return max(x, y) - min(x, y);
 }
 Vector2f Vector2DistanceFrom(Vector2f x, Vector2f y) {
-	int xdist = DistanceFrom(x.x, y.x);
-	int ydist = DistanceFrom(x.y, y.y);
-	return Vector2f((float)xdist, (float)ydist);
+	float xdist = DistanceFrom(x.x, y.x);
+	float ydist = DistanceFrom(x.y, y.y);
+	return Vector2f(xdist, ydist);
 }
 
 int main()
 {
 	srand(time(0));
-
 	Thread t = &Async;
 	t.launch();
 	focus = true;
 	if (!font.loadFromFile("arial.ttf")) {
 		cout << "Error loading font" << endl;
 		sleep(seconds(5));
+		return -1;
+	}
+	if (!apple.loadFromFile("apple.png") || !banana.loadFromFile("banana.png") || !bomb.loadFromFile("bomb.png")) {
+		cout << "Error loading texture" << endl;
+		sleep(seconds(5));
+		return -1;
 	}
 	Score.setCharacterSize(24);
 	Score.setFont(font);
@@ -110,41 +142,55 @@ void gGraphics::Poll(Event e) {
 }
 
 void Logic() {
-	//SpawnSpeed =  (rand() * 10) / (score == 0 ? 1 : score);
-	//cout << SpawnSpeed << endl;;
+	vector<Vector2f> dists(0);
+	for (int i = 0; i < Fruits.size(); i++) {
+		dists.push_back(Vector2DistanceFrom(Fruits[i]->shape->getPosition(), Player.getPosition()));
+		if (dists[i].x <= 40 && dists[i].y <= 40) {
+			if (Fruits[i]->Bad) lives--;
+			else score++;
+			Fruits.erase(Fruits.begin() + i);
+		}
+	}
 	for (int i = 0; i < 200; i++) {
 		Player.move((float)WASD.x / 100, (float)WASD.y / 100);
 		sleep(Time(microseconds(10)));
 	}
 	TempSpawn++;
 	int Items = 0;
+	SpawnSpeed = 300 / (score == 0 ? 1 : (score >= 10 ? (score * 0.25) : (score * 0.5) ) );
 	if (TempSpawn > SpawnSpeed) {
+		cout << SpawnSpeed << endl;
 		TempSpawn = 0;
 		for (int i = 0; i < Fruits.size(); i++) {
-			if (Fruits[i]->shape != nullptr) {
+			if (!Fruits[i]->Deleted) {
 				Items++;
+				Fruits[i]->DeleteBomb();
+				if (Fruits[i]->Deleted) {
+					Fruits.erase(Fruits.begin() + i);
+				}
+			}
+			else if (Items < AmountOfFruitsOnScreen){
+				int bad = rand() % 4;
+				Texture* te = bad == 1 ? &bomb : tex[rand() % 1];
+				Fruits[i] = new Fruit(bad == 1);
+				int x = rand() % window.getSize().x;
+				int y = rand() % window.getSize().y;
+				Fruits[i]->shape->setPosition(x, y);
+				hasTexture ? Fruits[i]->shape->setTexture(te) : Fruits[i]->shape->setFillColor(bad ? Color::Red : Color::Blue);
+				cout << "Spawned a fruit with vector id " << i << " at " << x << ", " << y << endl;
 			}
 		}
 		if (Items < AmountOfFruitsOnScreen) {
-			Fruits.push_back(new Fruit(rand() % 2 == 1));
+			int bad = rand() % 4;
+			Texture* te = bad == 1 ? &bomb : tex[rand() % 1];
+			Fruits.push_back(new Fruit(bad == 1));
 			int x = rand() % window.getSize().x;
 			int y = rand() % window.getSize().y;
 			Fruits.back()->shape->setPosition(x, y);
-			Fruits.back()->shape->setFillColor(Fruits.back()->Bad ? Color::Red : Color::Blue);
+			hasTexture ? Fruits.back()->shape->setTexture(te) : Fruits.back()->shape->setFillColor(bad ? Color::Red : Color::Blue);
 			cout << "Spawned a fruit with vector id " << Fruits.size() -1 << " at " << x << ", " << y << endl;
 		}
-		cout << "Amount of fruits on field is: " << Items +1 <<endl;
 	
-	}
-	vector<Vector2f> dists(0);
-	for (int i = 0; i < Fruits.size(); i++) {
-		dists.push_back(Vector2DistanceFrom(Fruits[i]->shape->getPosition(), Player.getPosition()));
-		if (dists[i].x <= 40 && dists[i].y <= 40) {
-			cout << "Collision!!" << endl;
-			if (Fruits[i]->Bad) lives--; 
-			else score++;
-			Fruits.erase(Fruits.begin() + i);
-		}
 	}
 	Score.setString("Score: " + to_string(score) + " Lives: " + to_string(lives));
 }
@@ -171,23 +217,3 @@ void Async() {
 		}
 	}
 }
-
-
-/*
-Code may be needed later
-
-for (int i = 0; i < Fruits.size(); i++) {
-if (Fruits[i] == nullptr) {
-if (Items < AmountOfFruitsOnScreen) {
-Fruits.resize(Fruits.size() + 1);
-Fruits[i] = (new CircleShape(25, 25));
-int x = rand() % window.getSize().x;
-int y = rand() % window.getSize().y;
-Fruits[i]->setPosition(x, y);
-cout << "Spawned a fruit with vector id " << i << " at " << x << ", " << y << endl;
-sleep(seconds(1));
-}
-}
-}
-
-*/
