@@ -53,6 +53,10 @@ public:
 			this->Deleted = true;
 		}
 	}
+	~Fruit() {
+		cout << "Deleted this->shape" << endl;
+		delete this->shape;
+	}
 };
 
 Vector2<int> WASD(0, 0);
@@ -112,6 +116,12 @@ int main()
 		window.display();
 		sleep(seconds(3));
 	}
+	int size = Fruits.size();
+	for (int i = 0; i < size; i++) {
+		delete Fruits[i];
+		cout << "Deleted Fruits[" + to_string(i) << "]" << endl;
+	}
+	sleep(seconds(2));
     return 0;
 }
 
