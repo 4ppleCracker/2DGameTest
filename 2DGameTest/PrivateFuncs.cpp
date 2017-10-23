@@ -42,3 +42,7 @@ void PrivateFuncs::ExecuteAfter(int ms, std::function<void()> func) {
 		}
 	}
 }
+
+int PrivateFuncs::DistanceFrom(int x, int y) {
+	return max(x, y) - min(x, y);
+}

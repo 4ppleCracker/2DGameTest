@@ -10,5 +10,6 @@ class PrivateFuncs
 public:
 	static void ExecuteAfterWhenKey(int secs, std::function<void()> func, char c);
 	static void ExecuteAfter(int ms, std::function<void()> func);
+	int DistanceFrom(int x, int y);
 };
 
