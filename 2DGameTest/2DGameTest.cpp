@@ -44,13 +44,8 @@ int DistanceFrom(int x, int y) {
 	return max(x, y) - min(x, y);
 }
 Vector2f Vector2DistanceFrom(Vector2f x, Vector2f y) {
-	int v1x = x.x;
-	int v1y = x.y;
-	int v2x = y.x;
-	int v2y = y.y;
-	
-	int xdist = DistanceFrom(v1x, v2x);
-	int ydist = DistanceFrom(v1y, v2y);
+	int xdist = DistanceFrom(x.x, y.x);
+	int ydist = DistanceFrom(x.y, y.y);
 	return Vector2f((float)xdist, (float)ydist);
 }
 
