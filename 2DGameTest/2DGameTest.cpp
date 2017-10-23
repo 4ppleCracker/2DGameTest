@@ -13,17 +13,31 @@ gGraphics graphics(window);
 
 RectangleShape Player(Vector2f(40, 40));
 
+class Fruit
+{
+public:
+	CircleShape* shape;
+	bool Bad;
+	Fruit(bool Bad=false) {
+		this->shape = new CircleShape(25, 25);
+		this->Bad = Bad;
+	}
+
+};
+
+
 Vector2<int> WASD(0, 0);
-vector<CircleShape*> Fruits(0, new CircleShape(25, 25));
+vector<Fruit*> Fruits(0, new Fruit());
 
 Font font;
 Text Score;
 
-int AmountOfFruitsOnScreen = 30;
+int AmountOfFruitsOnScreen = 3;
 int SpawnSpeed = 300;
 int TempSpawn;
 bool focus;
 int score;
+int lives = 3;
 
 void Async();
 int DistanceFrom(int x, int y) {
@@ -54,10 +68,22 @@ int main()
 	Score.setCharacterSize(24);
 	Score.setFont(font);
 	Score.setPosition(window.getSize().x / 2, window.getSize().y - 50);
-	Score.setString("Score: " + to_string(0));
+	Score.setString("Score: " + to_string(0) + " Lives: " + to_string(lives));
 	Score.setFillColor(Color::White);
-	while (window.isOpen()) {
+	while (window.isOpen() && lives >= 0) {
 		graphics.Render();
+	}
+	if (lives < 0) {
+		Text txt;
+		txt.setString("You lost!");
+		txt.setFillColor(Color::White);
+		txt.setCharacterSize(24);
+		txt.setFont(font);
+		txt.setPosition(window.getSize().x / 2, window.getSize().y / 2);
+		window.clear();
+		window.draw(txt);
+		window.display();
+		sleep(seconds(3));
 	}
     return 0;
 }
@@ -65,8 +91,8 @@ int main()
 void gGraphics::WindowRender() {
 	window.draw(Player);
 	for (int i = 0; i < Fruits.size(); i++) {
-		if (Fruits[i] != nullptr) {
-			window.draw(*Fruits[i]);
+		if (Fruits[i]->shape != nullptr) {
+			window.draw(*Fruits[i]->shape);
 		}
 	}
 	window.draw(Score);
@@ -89,6 +115,8 @@ void gGraphics::Poll(Event e) {
 }
 
 void Logic() {
+	//SpawnSpeed =  (rand() * 10) / (score == 0 ? 1 : score);
+	//cout << SpawnSpeed << endl;;
 	for (int i = 0; i < 200; i++) {
 		Player.move((float)WASD.x / 100, (float)WASD.y / 100);
 		sleep(Time(microseconds(10)));
@@ -98,15 +126,16 @@ void Logic() {
 	if (TempSpawn > SpawnSpeed) {
 		TempSpawn = 0;
 		for (int i = 0; i < Fruits.size(); i++) {
-			if (Fruits[i] != nullptr) {
+			if (Fruits[i]->shape != nullptr) {
 				Items++;
 			}
 		}
 		if (Items < AmountOfFruitsOnScreen) {
-			Fruits.push_back(new CircleShape(25, 25));
+			Fruits.push_back(new Fruit(rand() % 2 == 1));
 			int x = rand() % window.getSize().x;
 			int y = rand() % window.getSize().y;
-			Fruits.back()->setPosition(x, y);
+			Fruits.back()->shape->setPosition(x, y);
+			Fruits.back()->shape->setFillColor(Fruits.back()->Bad ? Color::Red : Color::Blue);
 			cout << "Spawned a fruit with vector id " << Fruits.size() -1 << " at " << x << ", " << y << endl;
 		}
 		cout << "Amount of fruits on field is: " << Items +1 <<endl;
@@ -114,19 +143,19 @@ void Logic() {
 	}
 	vector<Vector2f> dists(0);
 	for (int i = 0; i < Fruits.size(); i++) {
-		dists.push_back(Vector2DistanceFrom(Fruits[i]->getPosition(), Player.getPosition()));
-		if (dists[i].x <= 40 && dists[i].y <= 40 && i != 2) {
+		dists.push_back(Vector2DistanceFrom(Fruits[i]->shape->getPosition(), Player.getPosition()));
+		if (dists[i].x <= 40 && dists[i].y <= 40) {
 			cout << "Collision!!" << endl;
-			cout << i << endl;
+			if (Fruits[i]->Bad) lives--; 
+			else score++;
 			Fruits.erase(Fruits.begin() + i);
-			score++;
 		}
 	}
-	Score.setString("Score: " + to_string(score));
+	Score.setString("Score: " + to_string(score) + " Lives: " + to_string(lives));
 }
 
 void Async() {
-	while (window.isOpen()) {
+	while (window.isOpen() && lives >= 0) {
 		if (focus) {
 			WASD.x = 0;
 			WASD.y = 0;
