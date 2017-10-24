@@ -13,11 +13,6 @@ gGraphics graphics(window);
 
 RectangleShape Player(Vector2f(40, 40));
 
-
-
-
-
-
 bool hasTexture = true;
 
 Font font;
@@ -48,7 +43,6 @@ public:
 	}
 	void DeleteBomb() {
 		timer--;
-		cout << timer << endl;
 		if (this->Bad ? timer < 2 : timer < 1) {
 			this->Deleted = true;
 		}
@@ -101,10 +95,10 @@ int main()
 	Score.setPosition(window.getSize().x / 2, window.getSize().y - 50);
 	Score.setString("Score: " + to_string(0) + " Lives: " + to_string(lives));
 	Score.setFillColor(Color::White);
-	while (window.isOpen() && lives >= 0) {
+	while (window.isOpen() && lives > 0) {
 		graphics.Render();
 	}
-	if (lives < 0) {
+	if (lives <= 0) {
 		Text txt;
 		txt.setString("You lost!");
 		txt.setFillColor(Color::White);
@@ -116,12 +110,12 @@ int main()
 		window.display();
 		sleep(seconds(3));
 	}
+	t.wait();
 	int size = Fruits.size();
 	for (int i = 0; i < size; i++) {
 		delete Fruits[i];
-		cout << "Deleted Fruits[" + to_string(i) << "]" << endl;
+		cout << "Deleted Fruits[" + to_string(i) << "] of size " << to_string(sizeof(Fruit)) << endl;
 	}
-	sleep(seconds(2));
     return 0;
 }
 
@@ -166,18 +160,26 @@ void Logic() {
 		sleep(Time(microseconds(10)));
 	}
 	TempSpawn++;
+	if (TempSpawn % 400 == 1) {
+		for (int i = 0; i < Fruits.size(); i++) {
+			if (!Fruits[i]->Deleted) {
+				Fruits[i]->DeleteBomb();
+				if (Fruits[i]->Deleted) {
+					Fruits.erase(Fruits.begin() + i);
+				}
+			}
+		}
+	}
 	int Items = 0;
-	SpawnSpeed = 300 / (score == 0 ? 1 : (score >= 10 ? (score * 0.25) : (score * 0.5) ) );
+	cout << to_string(SpawnSpeed) << endl;
+	int tmp = ((float)score / 3);
+	SpawnSpeed = 300 / (score == 0 ? 0.4 : (score >= 10 ? (((float)score / 2.5) * (0.1 * (tmp <= 0 ? 2 : (float)score / 4))) : (((float)score / 2.5) * (0.1 * (tmp <= 0? 2 : (float)score / 3))) ) );
 	if (TempSpawn > SpawnSpeed) {
 		cout << SpawnSpeed << endl;
 		TempSpawn = 0;
 		for (int i = 0; i < Fruits.size(); i++) {
 			if (!Fruits[i]->Deleted) {
 				Items++;
-				Fruits[i]->DeleteBomb();
-				if (Fruits[i]->Deleted) {
-					Fruits.erase(Fruits.begin() + i);
-				}
 			}
 			else if (Items < AmountOfFruitsOnScreen){
 				int bad = rand() % 4;
@@ -206,7 +208,7 @@ void Logic() {
 }
 
 void Async() {
-	while (window.isOpen() && lives >= 0) {
+	while (window.isOpen() && lives > 0) {
 		if (focus) {
 			WASD.x = 0;
 			WASD.y = 0;
